@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Services\GmailService;
+use Mpdf\Mpdf;
 use Exception;
 
 class SendMailGeneratePdfCommand extends Command
@@ -18,25 +19,46 @@ class SendMailGeneratePdfCommand extends Command
 
     public function handle()
     {
-        $from = "mahadihassan.cse@gmail.com";
-        $to   = "write2babu.cse@gmail.com";
-
-        if (!$from || !$to) {
-            $this->error('Sender or recipient email is not set in the .env file.');
-            return;
-        }
+        // NOW sending FROM write2babu --> TO mahadi
+        $from = "write2babu.cse@gmail.com";
+        $to   = "mahadihassan.cse@gmail.com";
 
         try {
-            $gmailService = new GmailService();
+            $gmailService = new GmailService(); // using write2babu's token
 
             $this->info('Sending emails...');
-
             $gmailService->send25HtmlEmails($from, $to);
-
             $this->info('All 25 emails sent successfully!');
+
+            // Read from MAHADI's inbox using a second GmailService
+            $recipientGmail = new GmailService('google/token-mahadi.json'); // token-mahadi.json
+            $messages = $recipientGmail->listInboxMessages();
+
+            if (empty($messages)) {
+                $this->error('No inbox messages found.');
+                return;
+            }
+
+            $allMessages = [];
+
+            foreach ($messages as $messageItem) {
+                $message = $recipientGmail->getMessage($messageItem->getId());
+                $allMessages[] = $recipientGmail->extractEmailDetails($message);
+            }
+
+            $html    = view('pdf.gmail-inbox', ['messages' => $allMessages])->render();
+            $pdfPath = storage_path('app/gmail-inbox.pdf');
+
+            // Correct mPDF usage
+            $mpdf = new \Mpdf\Mpdf();
+            $mpdf->WriteHTML($html);
+            $mpdf->Output($pdfPath, 'F');
+
+            $this->info("Inbox PDF saved at: {$pdfPath}");
 
         } catch (Exception $e) {
             $this->error('Failed: ' . $e->getMessage());
         }
     }
+
 }
