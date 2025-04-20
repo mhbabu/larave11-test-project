@@ -2,39 +2,29 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
+use Mpdf\Mpdf;
 use Smalot\PdfParser\Parser;
 
 class PdfService
 {
-    /**
-     * Extract text from the PDF file.
-     *
-     * @param string $pdfPath
-     * @return string
-     */
-    public function extractText(string $pdfPath): string
+    public function convertPdfToHtml()
     {
-        // Initialize the PDF parser
-        $parser = new Parser();
-        
-        // Parse the file and extract text
-        $pdf = $parser->parseFile($pdfPath);
-        
-        // Get the text from the parsed PDF
-        $text = $pdf->getText();
-        
-        return $text;
+        $pdfPath        = storage_path('app/google/content.pdf');
+        $htmlOutputPath = storage_path('app/google/content.html');
+
+        // Only generate if it doesn't already exist
+        if (!file_exists($htmlOutputPath)) {
+            $command = "pdf2htmlEX \"$pdfPath\" \"$htmlOutputPath\"";
+            exec($command, $output, $returnCode);
+
+            if ($returnCode !== 0) {
+                throw new \Exception("PDF to HTML conversion failed. Code: $returnCode");
+            }
+        }
+
+        return $htmlOutputPath;
     }
 
-    /**
-     * Extract images from the PDF.
-     * This is just a placeholder for future image extraction.
-     *
-     * @param string $pdfPath
-     * @return array|null
-     */
-    public function extractImages(string $pdfPath): ?array
-    {
-        return null; // Placeholder for image extraction logic
-    }
 }

@@ -45,27 +45,28 @@ class GmailService
         $subject = 'Sample Email';
 
         $pdfService = new PdfService();
-        $pdfText = $pdfService->extractText(storage_path('app/google/content.pdf'));
+        $pdfHtml    = $pdfService->convertPdfToHtml();
+        $htmlContent = file_get_contents($pdfHtml);
 
-        $html = '
-        <html>
-            <body>
-                <h1>Hello, this is a test email</h1>
-                <p>' . nl2br($pdfText) . '</p>
-                <p>Thank you!</p>
-            </body>
-        </html>';
+        if (!$pdfHtml) {
+            return response()->json(['error' => 'Failed to convert PDF to HTML.'], 500);
+        }
 
         for ($i = 1; $i <= 25; $i++) {
             $numberedSubject = $subject . " #$i";
-            $this->sendHtmlEmail($from, $to, $numberedSubject, $html);
+            $this->sendHtmlEmail($from, $to, $numberedSubject, $htmlContent);
         }
     }
 
-    public function sendHtmlEmail(string $from, string $to, string $subject, string $html)
+
+    public function sendHtmlEmail(string $from, string $to, string $subject, string $htmlContent)
     {
+        // Render the HTML content using the Blade template
+        $html = view('email.template', ['htmlContent' => $htmlContent, 'subject' => $subject])->render();
+
         $boundary = uniqid("boundary_");
 
+        // Create the raw email message
         $rawMessage = "To: <$to>\r\n";
         $rawMessage .= "From: <$from>\r\n";
         $rawMessage .= "Subject: $subject\r\n";
@@ -78,13 +79,18 @@ class GmailService
         $rawMessage .= $html . "\r\n";
         $rawMessage .= "--$boundary--";
 
+        // Base64 encode the raw message for Gmail API
         $encodedMessage = rtrim(strtr(base64_encode($rawMessage), '+/', '-_'), '=');
 
+        // Create the Gmail message object
         $gmailMessage = new \Google_Service_Gmail_Message();
         $gmailMessage->setRaw($encodedMessage);
 
+        // Send the email via Gmail API
         $this->service->users_messages->send('me', $gmailMessage);
     }
+
+
 
     public function listInboxMessages($maxPerPage = 100): array
     {

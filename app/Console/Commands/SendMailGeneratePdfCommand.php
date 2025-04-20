@@ -24,14 +24,14 @@ class SendMailGeneratePdfCommand extends Command
         $to   = "mahadihassan.cse@gmail.com";
 
         try {
-            $gmailService = new GmailService(); // using write2babu's token
+            $gmailService = new GmailService();
 
             $this->info('Sending emails...');
             $gmailService->send25HtmlEmails($from, $to);
             $this->info('All 25 emails sent successfully!');
 
             // Read from MAHADI's inbox using a second GmailService
-            $recipientGmail = new GmailService('google/token-mahadi.json'); // token-mahadi.json
+            $recipientGmail = new GmailService('google/token-mahadi.json');
             $messages = $recipientGmail->listInboxMessages();
 
             if (empty($messages)) {
