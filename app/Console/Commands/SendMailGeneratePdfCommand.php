@@ -6,6 +6,7 @@ use Illuminate\Console\Command;
 use App\Services\GmailService;
 use Mpdf\Mpdf;
 use Exception;
+use Illuminate\Support\Facades\DB;
 
 class SendMailGeneratePdfCommand extends Command
 {
@@ -20,11 +21,14 @@ class SendMailGeneratePdfCommand extends Command
     public function handle()
     {
         // NOW sending FROM write2babu --> TO mahadi
-        $from = "write2babu.cse@gmail.com";
-        $to   = "mahadihassan.cse@gmail.com";
+        $from              = "write2babu.cse@gmail.com";
+        $to                = "mahadihassan.cse@gmail.com";
+        $senderTokenFile   = DB::table('gmail_tokens')->where('gmail_address', $from)->value('token_file_path') ?? null;
+        $receiverTokenFile = DB::table('gmail_tokens')->where('gmail_address', $to)->value('token_file_path') ?? null;
+
 
         try {
-            $gmailService = new GmailService();
+            $gmailService = new GmailService($senderTokenFile);
 
             $this->info('Sending emails...');
             $gmailService->send25HtmlEmails($from, $to);
@@ -34,27 +38,27 @@ class SendMailGeneratePdfCommand extends Command
             $recipientGmail = new GmailService('google/token-mahadi.json');
             $messages = $recipientGmail->listInboxMessages();
 
-            if (empty($messages)) {
-                $this->error('No inbox messages found.');
-                return;
-            }
+            // if (empty($messages)) {
+            //     $this->error('No inbox messages found.');
+            //     return;
+            // }
 
-            $allMessages = [];
+            // $allMessages = [];
 
-            foreach ($messages as $messageItem) {
-                $message = $recipientGmail->getMessage($messageItem->getId());
-                $allMessages[] = $recipientGmail->extractEmailDetails($message);
-            }
+            // foreach ($messages as $messageItem) {
+            //     $message = $recipientGmail->getMessage($messageItem->getId());
+            //     $allMessages[] = $recipientGmail->extractEmailDetails($message);
+            // }
 
-            $html    = view('pdf.gmail-inbox', ['messages' => $allMessages])->render();
-            $pdfPath = storage_path('app/gmail-inbox.pdf');
+            // $html    = view('pdf.gmail-inbox', ['messages' => $allMessages])->render();
+            // $pdfPath = storage_path('app/gmail-inbox.pdf');
 
-            // Correct mPDF usage
-            $mpdf = new \Mpdf\Mpdf();
-            $mpdf->WriteHTML($html);
-            $mpdf->Output($pdfPath, 'F');
+            // // Correct mPDF usage
+            // $mpdf = new \Mpdf\Mpdf();
+            // $mpdf->WriteHTML($html);
+            // $mpdf->Output($pdfPath, 'F');
 
-            $this->info("Inbox PDF saved at: {$pdfPath}");
+            // $this->info("Inbox PDF saved at: {$pdfPath}");
 
         } catch (Exception $e) {
             $this->error('Failed: ' . $e->getMessage());

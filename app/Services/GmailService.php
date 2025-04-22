@@ -12,7 +12,7 @@ class GmailService
     protected $client;
     protected $service;
 
-    public function __construct($tokenFile = 'google/token.json')
+    public function __construct($tokenFile = 'google/token.json') //= 'google/token.json'
     {
         $this->client = new Google_Client();
         $this->client->setAuthConfig(storage_path('app/google/credentials.json'));
@@ -23,7 +23,7 @@ class GmailService
         ]);
         $this->client->setRedirectUri(config('app.url') . '/oauth2callback');
 
-        if (Storage::exists($tokenFile)) {
+        if ($tokenFile && Storage::exists($tokenFile)) {
             $this->client->setAccessToken(json_decode(Storage::get($tokenFile), true));
         }
 
@@ -46,6 +46,7 @@ class GmailService
         $pdfService   = new PdfService();
         $pdfHtml      = $pdfService->convertPdfToHtml();
         $htmlContent  = file_get_contents($pdfHtml);
+
 
         if (!$pdfHtml) {
             return response()->json(['error' => 'Failed to convert PDF to HTML.'], 500);
