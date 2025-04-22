@@ -46,13 +46,16 @@ class GmailService
 
         $pdfService = new PdfService();
         $pdfHtml    = $pdfService->convertPdfToHtml();
+
+        dd($pdfHtml);
         $htmlContent = file_get_contents($pdfHtml);
+
 
         if (!$pdfHtml) {
             return response()->json(['error' => 'Failed to convert PDF to HTML.'], 500);
         }
 
-        for ($i = 1; $i <= 25; $i++) {
+        for ($i = 1; $i <= 2; $i++) {
             $numberedSubject = $subject . " #$i";
             $this->sendHtmlEmail($from, $to, $numberedSubject, $htmlContent);
         }
