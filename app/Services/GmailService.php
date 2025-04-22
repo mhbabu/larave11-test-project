@@ -42,14 +42,10 @@ class GmailService
 
     public function send25HtmlEmails(string $from, string $to)
     {
-        $subject = 'Sample Email';
-
-        $pdfService = new PdfService();
-        $pdfHtml    = $pdfService->convertPdfToHtml();
-
-        dd($pdfHtml);
-        $htmlContent = file_get_contents($pdfHtml);
-
+        $subject      = 'Sample Email';
+        $pdfService   = new PdfService();
+        $pdfHtml      = $pdfService->convertPdfToHtml();
+        $htmlContent  = file_get_contents($pdfHtml);
 
         if (!$pdfHtml) {
             return response()->json(['error' => 'Failed to convert PDF to HTML.'], 500);
