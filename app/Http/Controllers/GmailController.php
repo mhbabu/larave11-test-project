@@ -20,7 +20,7 @@ class GmailController extends Controller
 
     public function handleOAuth2Callback(Request $request) {
         try {
-            $client = new \Google_Client();
+            $client = new Google_Client();
             $client->setAuthConfig(storage_path('app/google/credentials.json'));
             $client->setRedirectUri(config('app.url') . '/oauth2callback');
             $client->setAccessType('offline');
@@ -30,34 +30,14 @@ class GmailController extends Controller
                 \Google_Service_Gmail::GMAIL_MODIFY
             ]);
     
-            // Step 1: Get token
+            // Fetch the token using the code from the request
             $token = $client->fetchAccessTokenWithAuthCode($request->get('code'));
-            $client->setAccessToken($token);
-    
-            // Step 2: Get user's Gmail address
-            $gmailService = new \Google_Service_Gmail($client);
-            $profile = $gmailService->users->getProfile('me');
-            $email = $profile->getEmailAddress();
-    
-            // Step 3: Format file name safely
-            $safeFileName = 'google/token-' . str_replace(['@', '.'], ['_at_', '_'], $email) . '.json';
-    
-            // Step 4: Save token file
-            Storage::put($safeFileName, json_encode($token));
-
-            DB::table('gmail_tokens')->updateOrInsert(
-                ['gmail_address' => $email],
-                [
-                    'token_file_path' => $safeFileName,
-                    'updated_at'      => Carbon::now(),
-                    'created_at'      => Carbon::now(), // only used if inserting
-                ]
-            );
+            
+            Storage::put('google/token.json', json_encode($token)); // store token
     
             return response()->json([
-                'status'     => 'success',
-                'message'    => "Authorization successful for {$email}.",
-                'token_file' => $safeFileName
+                'status'  => 'success',
+                'message' => 'Authorization successful. You can now run the Artisan command.'
             ], 200);
     
         } catch (\Exception $e) {

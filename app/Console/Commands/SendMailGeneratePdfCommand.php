@@ -23,12 +23,9 @@ class SendMailGeneratePdfCommand extends Command
         // NOW sending FROM write2babu --> TO mahadi
         $from              = "write2babu.cse@gmail.com";
         $to                = "mahadihassan.cse@gmail.com";
-        $senderTokenFile   = DB::table('gmail_tokens')->where('gmail_address', $from)->value('token_file_path') ?? null;
-        $receiverTokenFile = DB::table('gmail_tokens')->where('gmail_address', $to)->value('token_file_path') ?? null;
-
 
         try {
-            $gmailService = new GmailService($senderTokenFile);
+            $gmailService = new GmailService();
 
             $this->info('Sending emails...');
             $gmailService->send25HtmlEmails($from, $to);

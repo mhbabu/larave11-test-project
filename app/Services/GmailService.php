@@ -90,8 +90,6 @@ class GmailService
         $this->service->users_messages->send('me', $gmailMessage);
     }
 
-
-
     public function listInboxMessages($maxPerPage = 100): array
     {
         $allMessages = [];
@@ -135,7 +133,6 @@ class GmailService
         ];
     }
 
-    // ✅ Added this method
     public function getBody($payload)
     {
         $body = '';
