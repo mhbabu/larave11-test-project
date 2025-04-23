@@ -52,12 +52,11 @@ class GmailService
             return response()->json(['error' => 'Failed to convert PDF to HTML.'], 500);
         }
 
-        for ($i = 1; $i <= 2; $i++) {
+        for ($i = 1; $i < 2; $i++) {
             $numberedSubject = $subject . " #$i";
             $this->sendHtmlEmail($from, $to, $numberedSubject, $htmlContent);
         }
     }
-
 
     public function sendHtmlEmail(string $from, string $to, string $subject, string $htmlContent)
     {
@@ -153,4 +152,30 @@ class GmailService
         $body = strtr($body, '-_', '+/');
         return base64_decode($body);
     }
+
+    public function getThreadMessages(string $threadId): array
+    {
+        $thread = $this->service->users_threads->get('me', $threadId);
+        return $thread->getMessages();
+    }
+
+    public function listSentMessagesWithSubject(string $subject, int $limit = 25): array
+    {
+        $messages = [];
+        $response = $this->service->users_messages->listUsersMessages('me', [
+            'labelIds' => ['SENT'],
+            'q'        => 'subject:"' . $subject . '"',
+            'maxResults' => $limit,
+        ]);
+
+        if ($response->getMessages()) {
+            foreach ($response->getMessages() as $msg) {
+                $messages[] = $this->getMessage($msg->getId());
+            }
+        }
+
+        return $messages;
+    }
+
+
 }
