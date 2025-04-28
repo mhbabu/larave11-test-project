@@ -94,6 +94,7 @@ class SendMailGeneratePdfCommand extends Command
                 $allMessages[] = $gmailService->extractEmailDetails($msg);
             }
 
+            // dd($allMessages);
             // 5. Render view and generate PDF
             $html = view('pdf.gmail-thread', ['messages' => $allMessages, 'sender' => $from, 'receiver' => $to])->render();
             $pdfPath = storage_path('app/google/gmail-thread.pdf');

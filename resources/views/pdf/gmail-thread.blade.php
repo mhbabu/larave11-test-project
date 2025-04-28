@@ -52,7 +52,7 @@
                 @endif
             </div>
             <div class="email-body">
-                {!! nl2br(e($message['body'])) !!}
+                {!! $message['body'] !!}
             </div>
         </div>
     @endforeach

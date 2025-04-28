@@ -117,41 +117,56 @@ class GmailService
     }
 
     public function extractEmailDetails($message)
-    {
-        $payload = $message->getPayload();
-        $headers = collect($payload->getHeaders());
+{
+    $payload = $message->getPayload();
+    $headers = collect($payload->getHeaders());
 
-        $subject = optional($headers->firstWhere('name', 'Subject'))->value ?? '(No Subject)';
-        $from    = optional($headers->firstWhere('name', 'From'))->value ?? '(Unknown Sender)';
-        $body    = $this->getBody($payload);
+    $subject = optional($headers->firstWhere('name', 'Subject'))->value ?? '(No Subject)';
+    $from = optional($headers->firstWhere('name', 'From'))->value ?? '(Unknown Sender)';
+    $to = optional($headers->firstWhere('name', 'To'))->value ?? '';
+    $date = optional($headers->firstWhere('name', 'Date'))->value ?? '';
+    
+    $body = $this->getCleanBody($payload);
 
-        return [
-            'from'    => strip_tags($from),
-            'subject' => strip_tags($subject),
-            'body'    => strip_tags($body),
-        ];
-    }
+    return [
+        'from' => $from,
+        'to' => $to,
+        'subject' => $subject,
+        'date' => $date,
+        'body' => $body,
+    ];
+}
 
-    public function getBody($payload)
-    {
-        $body = '';
-
-        if ($payload->getBody() && $payload->getBody()->getData()) {
-            $body = $payload->getBody()->getData();
-        } elseif ($payload->getParts()) {
-            foreach ($payload->getParts() as $part) {
-                $mimeType = $part->getMimeType();
-                if ($mimeType === 'text/plain' || $mimeType === 'text/html') {
-                    $body = $part->getBody()->getData();
-                    break;
-                }
+public function getCleanBody($payload)
+{
+    $body = '';
+    
+    if ($payload->getParts()) {
+        foreach ($payload->getParts() as $part) {
+            if ($part->getMimeType() === 'text/html') {
+                $body = $this->decodeBody($part->getBody()->getData());
+                break;
+            } elseif ($part->getMimeType() === 'text/plain') {
+                $body = nl2br($this->decodeBody($part->getBody()->getData()));
             }
         }
-
-        // Decode Gmail's base64url format
-        $body = strtr($body, '-_', '+/');
-        return base64_decode($body);
+    } elseif ($payload->getBody()->getData()) {
+        $body = $this->decodeBody($payload->getBody()->getData());
     }
+    
+    // Clean up common email artifacts
+    $body = preg_replace('/<style[^>]*>.*?<\/style>/is', '', $body);
+    $body = preg_replace('/<head[^>]*>.*?<\/head>/is', '', $body);
+    $body = strip_tags($body, '<br><p><a><div><span>');
+    
+    return $body;
+}
+
+protected function decodeBody($data)
+{
+    $data = strtr($data, '-_', '+/');
+    return base64_decode($data);
+}
 
     public function getThreadMessages(string $threadId): array
     {
